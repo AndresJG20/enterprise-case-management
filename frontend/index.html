@@ -17,15 +17,16 @@
 <div id="workspace" hidden>
 <h1>Gestión de casos</h1><p id="identity"></p>
 <div id="metrics" class="metrics"></div>
+<section id="userPanel" hidden><h2>Crear usuario</h2><form id="newUser"><label>Usuario<input name="username" required maxlength="80"></label><label>Contraseña<input name="password" type="password" minlength="12" maxlength="128" required autocomplete="new-password"></label><label>Rol<select name="role"><option value="analyst">Analista</option><option value="admin">Administrador</option></select></label><button>Crear usuario</button></form></section>
 <section><h2>Registrar caso</h2><form id="newCase">
 <label>Título<input name="title" minlength="3" maxlength="160" required></label>
 <label>Descripción<textarea name="description" maxlength="4000"></textarea></label>
 <label>Responsable<select name="owner_id" id="owners"></select></label>
-<label>Prioridad<select name="priority"><option>MEDIUM</option><option>LOW</option><option>HIGH</option></select></label>
+<label>Prioridad<select name="priority"><option value="MEDIUM">Media</option><option value="LOW">Baja</option><option value="HIGH">Alta</option></select></label>
 <button>Registrar</button></form></section>
 <section><h2>Registro operativo</h2><form id="filter">
 <label>Buscar<input name="search" placeholder="Título"></label>
-<label>Estado<select name="status"><option value="">Todos</option><option>OPEN</option><option>IN_PROGRESS</option><option>RESOLVED</option></select></label><button>Filtrar</button></form>
+<label>Estado<select name="status"><option value="">Todos</option><option value="OPEN">Abierto</option><option value="IN_PROGRESS">En proceso</option><option value="RESOLVED">Resuelto</option></select></label><button>Filtrar</button></form>
 <div class="table-wrap"><table><thead><tr><th>ID</th><th>Caso</th><th>Responsable</th><th>Prioridad</th><th>Estado</th><th>Historial</th></tr></thead><tbody id="rows"></tbody></table></div>
 <div class="paging"><button id="prev">Anterior</button><span id="page"></span><button id="next">Siguiente</button></div></section>
 <section id="historyPanel" hidden><h2>Historial de auditoría</h2><ul id="history"></ul></section>

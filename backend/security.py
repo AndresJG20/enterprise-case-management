@@ -35,13 +35,13 @@ def current_user(credentials: HTTPAuthorizationCredentials | None = Depends(bear
                  db: Session = Depends(get_db)):
     session = db.get(SessionToken, token_hash(credentials.credentials)) if credentials else None
     if not session or session.expires <= utcnow():
-        raise HTTPException(401, "Invalid or expired session", headers={"WWW-Authenticate":"Bearer"})
+        raise HTTPException(401, "La sesión no es válida o ha caducado", headers={"WWW-Authenticate":"Bearer"})
     user = db.get(User, session.user_id)
     if not user:
-        raise HTTPException(401, "Unknown user")
+        raise HTTPException(401, "Usuario no encontrado")
     return user
 
 def admin(user: User = Depends(current_user)):
     if user.role != "admin":
-        raise HTTPException(403, "Administrator required")
+        raise HTTPException(403, "Se requieren permisos de administrador")
     return user

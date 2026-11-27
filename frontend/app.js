@@ -1,6 +1,7 @@
 const $ = id => document.getElementById(id);
 let token = null, user = null, offset = 0, total = 0;
 const limit = 20;
+const labels = {OPEN:"Abierto",IN_PROGRESS:"En proceso",RESOLVED:"Resuelto",LOW:"Baja",MEDIUM:"Media",HIGH:"Alta",admin:"Administrador",analyst:"Analista",CREATED:"Creación",STATUS_CHANGED:"Cambio de estado"};
 const owners = new Map();
 const transitions = {OPEN:["IN_PROGRESS"], IN_PROGRESS:["OPEN","RESOLVED"], RESOLVED:["IN_PROGRESS"]};
 
@@ -16,7 +17,12 @@ async function api(path, method = "GET", body) {
     return response.status === 204 ? null : response.json();
 }
 function clearSession() {
-    token = null; user = null; offset = 0;
+    token = null; user = null; offset = 0; total = 0;
+    owners.clear();
+    for (const id of ["rows","history","metrics","owners"]) $(id).replaceChildren();
+    $("historyPanel").hidden = true; $("userPanel").hidden = true;
+    $("newCase").reset(); $("newUser").reset(); $("filter").reset();
+    $("identity").textContent = "";
     $("workspace").hidden = true; $("loginPanel").hidden = false; $("logout").hidden = true;
 }
 function report(error) { $("notice").textContent = error.message; }
@@ -42,10 +48,10 @@ async function refresh() {
     $("rows").replaceChildren();
     for (const item of data.items) {
         const row = $("rows").insertRow();
-        cell(row,item.id); cell(row,item.title); cell(row,owners.get(item.owner_id) ?? item.owner_id); cell(row,item.priority);
+        cell(row,item.id); cell(row,item.title); cell(row,owners.get(item.owner_id) ?? item.owner_id); cell(row,labels[item.priority]);
         const select = document.createElement("select");
         select.setAttribute("aria-label","Estado del caso "+item.id);
-        for (const state of [item.status,...transitions[item.status]]) select.add(new Option(state,state));
+        for (const state of [item.status,...transitions[item.status]]) select.add(new Option(labels[state],state));
         select.onchange = async () => {
             try { await api("/cases/"+item.id,"PATCH",{status:select.value,version:item.version}); await refresh(); }
             catch(e) { report(e); select.value = item.status; }
@@ -56,7 +62,7 @@ async function refresh() {
             try {
                 const events = await api("/cases/"+item.id+"/audit");
                 $("history").replaceChildren();
-                for (const event of events) { const li = document.createElement("li"); li.textContent = event.created_at+" — "+event.action+" — "+event.detail; $("history").append(li); }
+                for (const event of events) { const li = document.createElement("li"); li.textContent = event.created_at+" — "+(labels[event.action] ?? event.action)+" — "+event.detail.replace(/OPEN|IN_PROGRESS|RESOLVED/g, state => labels[state]); $("history").append(li); }
                 $("historyPanel").hidden = false;
             } catch(e) { report(e); }
         };
@@ -70,8 +76,8 @@ $("login").onsubmit = async e => {
     try {
         const result = await api("/login","POST",Object.fromEntries(new FormData(e.target)));
         token = result.access_token; user = result.user; e.target.reset();
-        $("identity").textContent = user.username+" · "+user.role; $("loginPanel").hidden = true;
-        $("workspace").hidden = false; $("logout").hidden = false;
+        $("identity").textContent = user.username+" · "+labels[user.role]; $("loginPanel").hidden = true;
+        $("workspace").hidden = false; $("logout").hidden = false; $("userPanel").hidden = user.role !== "admin";
         $("notice").textContent = ""; await refreshUsers(); await refresh();
     } catch(error) { report(error); }
 };
@@ -81,6 +87,15 @@ $("newCase").onsubmit = async e => {
     const body = Object.fromEntries(new FormData(e.target)); body.owner_id = Number(body.owner_id);
     try { await api("/cases","POST",body); e.target.reset(); offset=0; await refresh(); }
     catch(error) { report(error); }
+};
+$("newUser").onsubmit = async e => {
+    e.preventDefault();
+    try {
+        await api("/users","POST",Object.fromEntries(new FormData(e.target)));
+        e.target.reset();
+        await refreshUsers();
+        $("notice").textContent = "Usuario creado correctamente";
+    } catch(error) { report(error); }
 };
 $("filter").onsubmit = e => { e.preventDefault(); offset=0; refresh().catch(report); };
 $("prev").onclick = () => { offset=Math.max(0,offset-limit); refresh().catch(report); };

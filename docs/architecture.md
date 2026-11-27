@@ -1,18 +1,36 @@
-# Architecture
-Frontend calls an authenticated REST API. Routes validate requests; services enforce role and state transitions; repositories encapsulate filtered reads, optimistic concurrency and auditing. SQLAlchemy maps the relational model to SQLite for local use or PostgreSQL with Compose.
+# Arquitectura de CaseFlow
+
+La aplicación separa la interfaz, las rutas HTTP, las reglas del negocio y el acceso a la base de datos. De esta manera, un cambio en la presentación no requiere modificar directamente las consultas SQL.
+
 ```mermaid
 flowchart LR
-  Browser --> Routes
-  Routes --> Security
-  Routes --> Services
-  Services --> Repositories
-  Repositories --> DB[(Database)]
+  UI[Interfaz web] --> API[API REST]
+  API --> SEG[Autenticación y permisos]
+  API --> SVC[Servicios]
+  SVC --> REP[Repositorios]
+  REP --> DB[(Base de datos)]
 ```
+
+## Modelo de datos
+
 ```mermaid
 erDiagram
-  USER ||--o{ CASE : owns
-  USER ||--o{ SESSION : has
-  USER ||--o{ AUDIT : performs
-  CASE ||--o{ AUDIT : records
+  USER ||--o{ CASE : asignacion
+  USER ||--o{ SESSION : autenticacion
+  USER ||--o{ AUDIT : autor
+  CASE ||--o{ AUDIT : historial
 ```
-Security: PBKDF2 salted password hashes, expiring opaque bearer tokens stored hashed, scoped analyst queries, optimistic versions. No hard-coded accounts. Tokens stay in browser memory. No public deployment, rate limiting, TLS, migrations or attachments yet. The demo database schema is intentionally created on startup; production requires Alembic migrations, secret management and operational controls.
+
+Los nombres de las entidades coinciden con los identificadores técnicos del código. Cada caso tiene un responsable y una versión que aumenta cuando cambia el estado. El registro de auditoría conserva el autor y la descripción de la operación.
+
+## Reglas de operación
+
+- Un analista solo puede consultar y modificar sus casos.
+- Los cambios válidos son Abierto → En proceso → Resuelto, con posibilidad de volver de En proceso a Abierto y de Resuelto a En proceso.
+- Si la versión enviada no coincide con la almacenada, la API devuelve HTTP 409.
+
+## Seguridad y persistencia
+
+Las contraseñas se almacenan con PBKDF2 y una sal individual. Los tokens de sesión son aleatorios, se guardan mediante hash y caducan a las ocho horas. En la interfaz permanecen en memoria, no en localStorage. SQLAlchemy permite trabajar con SQLite o configurar PostgreSQL.
+
+La base se inicializa al arrancar. Esta decisión facilita las pruebas locales; para una instalación de producción faltan migraciones con Alembic, HTTPS, limitación de intentos, gestión de secretos y una revisión de los controles de acceso.

@@ -15,7 +15,7 @@ router = APIRouter(prefix="/api")
 def login(data: Login, db: Session = Depends(get_db)):
     user = db.scalar(select(User).where(User.username == data.username))
     if not user or not verify_password(data.password, user.password_hash):
-        raise HTTPException(401, "Invalid credentials")
+        raise HTTPException(401, "Usuario o contraseña incorrectos")
     return {"access_token":issue_token(db,user), "token_type":"bearer", "user":UserOut.model_validate(user)}
 
 @router.post("/logout", status_code=204)
@@ -38,7 +38,7 @@ def add_user(data: NewUser, user: User = Depends(admin), db: Session = Depends(g
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(409, "Username already exists")
+        raise HTTPException(409, "El nombre de usuario ya existe")
     return item
 
 @router.get("/cases")
