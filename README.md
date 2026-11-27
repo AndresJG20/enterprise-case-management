@@ -60,7 +60,7 @@ Utiliza una base nueva; no se incluyen migraciones desde la versión inicial.
 python -m pytest -q
 ```
 
-GitHub Actions ejecuta las pruebas contra SQLite y construye la imagen Docker. La configuración de PostgreSQL y la navegación completa aún requieren validación adicional.
+GitHub Actions ejecuta las pruebas contra SQLite y construye la imagen Docker. Se comprueban autenticación, permisos, creación de usuarios, cambios de estado, auditoría, filtros y paginación. La configuración de PostgreSQL y la navegación completa aún requieren validación adicional.
 
 ## Alcance
 

@@ -57,3 +57,26 @@ def test_permissions(client):
     assert client.post("/api/users",headers=other,json={"username":"new","password":"long-password"}).status_code==403
     assert client.post("/api/cases",headers=other,json={"title":"Own case","owner_id":analyst_id}).status_code==201
     assert client.get("/api/cases?search=Own",headers=other).json()["total"]==1
+
+
+def test_user_registration_and_validation(client):
+    headers, _ = login(client, "admin")
+    payload = {"username": "  usuario_demo  ", "password": "clave-local-123", "role": "analyst"}
+    result = client.post("/api/users", headers=headers, json=payload)
+    assert result.status_code == 201
+    assert result.json()["username"] == "usuario_demo"
+    assert "password_hash" not in result.json()
+    assert client.post("/api/users", headers=headers, json=payload).status_code == 409
+    assert client.post("/api/users", headers=headers, json={**payload, "username":"   "}).status_code == 422
+    assert client.post("/api/login", json={"username":"usuario_demo", "password":"clave-local-123"}).status_code == 200
+
+def test_filter_and_pagination(client):
+    headers, uid = login(client, "admin")
+    for title in ("Solicitud uno", "Solicitud dos", "Otra tarea"):
+        assert client.post("/api/cases", headers=headers, json={"title":title, "owner_id":uid}).status_code == 201
+    page = client.get("/api/cases?search=Solicitud&limit=1", headers=headers).json()
+    assert page["total"] == 2
+    assert len(page["items"]) == 1
+    next_page = client.get("/api/cases?search=Solicitud&limit=1&offset=1", headers=headers).json()
+    assert next_page["items"][0]["id"] != page["items"][0]["id"]
+    assert client.get("/api/cases?limit=0", headers=headers).status_code == 422

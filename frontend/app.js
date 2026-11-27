@@ -6,14 +6,16 @@ const owners = new Map();
 const transitions = {OPEN:["IN_PROGRESS"], IN_PROGRESS:["OPEN","RESOLVED"], RESOLVED:["IN_PROGRESS"]};
 
 async function api(path, method = "GET", body) {
+    const requestToken = token;
     const headers = {"Content-Type":"application/json"};
     if (token) headers.Authorization = "Bearer " + token;
     const response = await fetch("/api" + path, {method, headers, body:body === undefined ? undefined : JSON.stringify(body)});
     if (!response.ok) {
         const error = await response.json().catch(() => ({}));
-        if (response.status === 401 && token) clearSession();
+        if (response.status === 401 && requestToken && requestToken === token) clearSession();
         throw new Error(typeof error.detail === "string" ? error.detail : "Solicitud inválida ("+response.status+")");
     }
+    if (requestToken !== token) throw new Error("La sesión cambió durante la consulta");
     return response.status === 204 ? null : response.json();
 }
 function clearSession() {
@@ -28,17 +30,24 @@ function clearSession() {
 function report(error) { $("notice").textContent = error.message; }
 function cell(row,value) { const td = row.insertCell(); td.textContent = value; return td; }
 async function refreshUsers() {
+    const currentToken = token;
+    const users = await api("/users");
+    if (currentToken !== token) return;
     owners.clear(); $("owners").replaceChildren();
-    for (const item of await api("/users")) {
+    for (const item of users) {
         owners.set(item.id,item.username);
         $("owners").add(new Option(item.username,item.id));
     }
 }
+let refreshSequence = 0;
 async function refresh() {
+    const sequence = ++refreshSequence;
+    const currentToken = token;
     const filters = new FormData($("filter"));
     const q = new URLSearchParams({offset,limit});
     for (const [key,value] of filters) if (value) q.set(key,value);
     const [data, metrics] = await Promise.all([api("/cases?"+q),api("/metrics")]);
+    if (sequence !== refreshSequence || currentToken !== token) return;
     total = data.total;
     $("metrics").replaceChildren();
     for (const [label,key] of [["Total","total"],["Abiertos","OPEN"],["En proceso","IN_PROGRESS"],["Resueltos","RESOLVED"]]) {
@@ -73,13 +82,16 @@ async function refresh() {
 }
 $("login").onsubmit = async e => {
     e.preventDefault();
+    const button = e.target.querySelector("button");
+    if (button.disabled) return;
+    button.disabled = true;
     try {
         const result = await api("/login","POST",Object.fromEntries(new FormData(e.target)));
         token = result.access_token; user = result.user; e.target.reset();
         $("identity").textContent = user.username+" · "+labels[user.role]; $("loginPanel").hidden = true;
         $("workspace").hidden = false; $("logout").hidden = false; $("userPanel").hidden = user.role !== "admin";
         $("notice").textContent = ""; await refreshUsers(); await refresh();
-    } catch(error) { report(error); }
+    } catch(error) { report(error); } finally { button.disabled = false; }
 };
 $("logout").onclick = async () => { try { await api("/logout","POST"); } catch(e) { report(e); } finally { clearSession(); } };
 $("newCase").onsubmit = async e => {

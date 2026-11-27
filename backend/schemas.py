@@ -1,6 +1,6 @@
 from typing import Literal
 from datetime import datetime
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 Priority = Literal["LOW", "MEDIUM", "HIGH"]
 Status = Literal["OPEN", "IN_PROGRESS", "RESOLVED"]
@@ -9,6 +9,11 @@ Role = Literal["admin", "analyst"]
 class Login(BaseModel):
     username: str = Field(min_length=1, max_length=80)
     password: str = Field(min_length=1, max_length=128)
+
+    @field_validator("username", mode="before")
+    @classmethod
+    def clean_username(cls, value):
+        return value.strip() if isinstance(value, str) else value
 
 class NewUser(Login):
     password: str = Field(min_length=12, max_length=128)

@@ -21,6 +21,9 @@ def verify_password(password, encoded):
     digest = hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt), 600000)
     return hmac.compare_digest(digest.hex(), expected)
 
+# El hash de referencia evita omitir el cálculo cuando el usuario no existe.
+DUMMY_PASSWORD_HASH = hash_password(secrets.token_urlsafe(32))
+
 def token_hash(token):
     return hashlib.sha256(token.encode()).hexdigest()
 

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from .database import get_db
 from .models import User, Audit, SessionToken
 from .schemas import Login, NewUser, UserOut, NewCase, CaseOut, ChangeStatus, AuditOut, Status
-from .security import verify_password, hash_password, issue_token, current_user, admin, bearer, token_hash
+from .security import verify_password, hash_password, issue_token, current_user, admin, bearer, token_hash, DUMMY_PASSWORD_HASH
 from . import repositories as repo, services
 
 router = APIRouter(prefix="/api")
@@ -14,7 +14,8 @@ router = APIRouter(prefix="/api")
 @router.post("/login")
 def login(data: Login, db: Session = Depends(get_db)):
     user = db.scalar(select(User).where(User.username == data.username))
-    if not user or not verify_password(data.password, user.password_hash):
+    valid = verify_password(data.password, user.password_hash if user else DUMMY_PASSWORD_HASH)
+    if not user or not valid:
         raise HTTPException(401, "Usuario o contraseña incorrectos")
     return {"access_token":issue_token(db,user), "token_type":"bearer", "user":UserOut.model_validate(user)}
 
