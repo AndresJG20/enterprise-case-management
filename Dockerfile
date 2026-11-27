@@ -2,6 +2,10 @@ FROM python:3.12-slim
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-COPY app.py index.html ./
+COPY backend ./backend
+COPY frontend ./frontend
+RUN mkdir /data && chown 10001:10001 /data
+USER 10001:10001
+ENV DATABASE_URL=sqlite:////data/caseflow.db
 EXPOSE 8000
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn","backend.main:app","--host","0.0.0.0","--port","8000"]

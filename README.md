@@ -1,51 +1,34 @@
-# CaseFlow | Enterprise Case Management
+# CaseFlow — Enterprise Case Management
 
-Prototipo personal de gestión de casos empresariales. Utiliza exclusivamente datos ficticios. No contiene código, datos ni reglas internas de ninguna institución.
+![CI](https://github.com/AndresJG20/enterprise-case-management/actions/workflows/ci.yml/badge.svg)
 
-## Funcionalidades
-- Registro de casos, responsables y prioridad.
-- Actualización de estados y tablero de indicadores.
-- API REST documentada mediante OpenAPI.
-- Persistencia SQLite y validación de entradas.
+Portfolio application for generic case management. Synthetic demonstration only; no institutional data.
 
-## Arquitectura
-```mermaid
-flowchart LR
-  UI[HTML / JavaScript] --> API[FastAPI]
-  API --> DB[(SQLite)]
-  TEST[Pytest] --> API
-```
+## Features
+Authenticated sessions, administrator/analyst roles, scoped access, registration and assignment, search and pagination, guarded state transitions, optimistic locking, audit history and metrics. Responsive browser UI; REST API with OpenAPI. SQLite for development and PostgreSQL configuration via Docker Compose.
 
-## Instalación local
-Requiere Python 3.12.
+## Run locally
+Python 3.12. Create and activate a virtual environment, install dependencies, set CASEFLOW_ADMIN_PASSWORD to a unique password of at least 12 characters (PowerShell: $env:CASEFLOW_ADMIN_PASSWORD = "your-local-password"), then:
 ```bash
-python -m venv .venv
-# Windows: .venv\\Scripts\\activate
-# Linux/macOS: source .venv/bin/activate
 pip install -r requirements-dev.txt
-python -m uvicorn app:app --reload
+python -m backend.seed
+python -m uvicorn backend.main:app
 ```
-Abrir http://localhost:8000 y consultar Swagger en http://localhost:8000/docs.
+Open http://localhost:8000, login as admin. Use /docs to create analysts and explore the API. Administrator password is not stored in source.
 
-## Pruebas
+## PostgreSQL
+Copy .env.example to .env and set unique local values (use URL-safe database password). Run docker compose up -d --build, then docker compose exec app python -m backend.seed. Use a fresh database; the initial prototype database is not migrated.
+
+## Testing
 ```bash
 python -m pytest -q
 ```
+CI runs integration tests against a temporary SQLite database and builds the image. PostgreSQL integration and browser E2E are not yet verified.
 
-## Docker
-```bash
-docker build -t caseflow .
-docker run --rm -p 127.0.0.1:8000:8000 caseflow
-```
-La base del contenedor es temporal; para conservarla, montar un volumen y definir CASEFLOW_DB con una ruta dentro de ese volumen.
+## Structure
+- backend/: configuration, models, schemas, repositories, services, security, API
+- frontend/: HTML, CSS, JavaScript
+- tests/: API integration
+- docs/: architecture and limitations
 
-## API
-| Método | Ruta | Operación |
-|---|---|---|
-| GET | /health | Estado del servicio |
-| GET | /api/cases | Listado |
-| POST | /api/cases | Creación |
-| PATCH | /api/cases/{id} | Cambio de estado |
-
-## Alcance y próximos pasos
-Versión 0.1: demostración local sin autenticación. No desplegar públicamente sin controles de acceso. Pendientes: autenticación, roles, auditoría, PostgreSQL, migraciones, automatización de recordatorios y despliegue seguro. El código de pruebas está incluido; verificar su ejecución antes de considerar la versión validada.
+See [architecture](docs/architecture.md). No production claims: add TLS, rate limiting, migrations and security review before exposing the application.

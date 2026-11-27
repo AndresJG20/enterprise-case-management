@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CaseFlow | Operaciones</title>
+<link rel="stylesheet" href="/styles.css">
+<script type="module" src="/app.js"></script>
+</head>
+<body>
+<header><strong>CaseFlow</strong><span>Centro de operaciones</span><button id="logout" hidden>Cerrar sesión</button></header>
+<main>
+<section id="loginPanel"><h1>Acceso al sistema</h1><form id="login">
+<label>Usuario<input name="username" required autocomplete="username"></label>
+<label>Contraseña<input name="password" type="password" required autocomplete="current-password"></label>
+<button>Ingresar</button></form></section>
+<div id="workspace" hidden>
+<h1>Gestión de casos</h1><p id="identity"></p>
+<div id="metrics" class="metrics"></div>
+<section><h2>Registrar caso</h2><form id="newCase">
+<label>Título<input name="title" minlength="3" maxlength="160" required></label>
+<label>Descripción<textarea name="description" maxlength="4000"></textarea></label>
+<label>Responsable<select name="owner_id" id="owners"></select></label>
+<label>Prioridad<select name="priority"><option>MEDIUM</option><option>LOW</option><option>HIGH</option></select></label>
+<button>Registrar</button></form></section>
+<section><h2>Registro operativo</h2><form id="filter">
+<label>Buscar<input name="search" placeholder="Título"></label>
+<label>Estado<select name="status"><option value="">Todos</option><option>OPEN</option><option>IN_PROGRESS</option><option>RESOLVED</option></select></label><button>Filtrar</button></form>
+<div class="table-wrap"><table><thead><tr><th>ID</th><th>Caso</th><th>Responsable</th><th>Prioridad</th><th>Estado</th><th>Historial</th></tr></thead><tbody id="rows"></tbody></table></div>
+<div class="paging"><button id="prev">Anterior</button><span id="page"></span><button id="next">Siguiente</button></div></section>
+<section id="historyPanel" hidden><h2>Historial de auditoría</h2><ul id="history"></ul></section>
+</div><p id="notice" role="status"></p>
+</main></body></html>
